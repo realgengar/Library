@@ -78,8 +78,8 @@ local redzlib = {
 			["userx"] = "rbxassetid://10747372992",
 			["info"] = "rbxassetid://10723415903",
 			["eye"] = "rbxassetid://10723346959",
-    	["home"] = "rbxassetid://10723407389",
-    	["truck"] = "rbxassetid://10747364031",
+    	    ["home"] = "rbxassetid://10723407389",
+    	    ["truck"] = "rbxassetid://10747364031",
 			["headphones"] = "rbxassetid://10723406165",
 			["Drip"] = "rbxassetid://72495850369898",
 			["flame"] = "rbxassetid://10723376114",
@@ -88,6 +88,8 @@ local redzlib = {
 			["shield"] = "rbxassetid://10734951847",
 			["coffee"] = "rbxassetid://10709810814",
 			["users"] = "rbxassetid://10747373426",
+			["ghost"] = "rbxassetid://10723396107",
+			["baby"] = "rbxassetid://10709769732",
 		}
 	end)()
 }
