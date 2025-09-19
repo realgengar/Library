@@ -78,8 +78,8 @@ local redzlib = {
 			["userx"] = "rbxassetid://10747372992",
 			["info"] = "rbxassetid://10723415903",
 			["eye"] = "rbxassetid://10723346959",
-    	    ["home"] = "rbxassetid://10723407389",
-    	    ["truck"] = "rbxassetid://10747364031",
+    	["home"] = "rbxassetid://10723407389",
+    	["truck"] = "rbxassetid://10747364031",
 			["headphones"] = "rbxassetid://10723406165",
 			["Drip"] = "rbxassetid://72495850369898",
 			["flame"] = "rbxassetid://10723376114",
@@ -88,8 +88,6 @@ local redzlib = {
 			["shield"] = "rbxassetid://10734951847",
 			["coffee"] = "rbxassetid://10709810814",
 			["users"] = "rbxassetid://10747373426",
-			["ghost"] = "rbxassetid://10723396107",
-			["baby"] = "rbxassetid://10709769732",
 		}
 	end)()
 }
@@ -659,7 +657,7 @@ function redzlib:Notify(Configs)
 	
 	local Colors = {
 		Info = Color3.fromRGB(88, 101, 242),
-		Success = Color3.fromRGB(157, 0, 255),
+		Success = Color3.fromRGB(82, 75, 87),
 		Warning = Color3.fromRGB(255, 193, 7),
 		Error = Color3.fromRGB(255, 17, 0)
 	}
@@ -677,7 +675,7 @@ function redzlib:Notify(Configs)
 	Make("Corner", NotificationFrame, UDim.new(0, 12))
 	
 	local NotificationStroke = Create("UIStroke", NotificationFrame, {
-		Color = Color3.fromRGB(179, 0, 255),
+		Color = Color3.fromRGB(42, 38, 43), --stroke
 		Thickness = 2,
 		ApplyStrokeMode = "Border"
 	})
