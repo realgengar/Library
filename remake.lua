@@ -87,6 +87,8 @@ local redzlib = {
 			["settings"] = "rbxassetid://10734950309",
 			["shield"] = "rbxassetid://10734951847",
 			["coffee"] = "rbxassetid://10709810814",
+            ["ghost"] = "rbxassetid://10723396107",
+			["baby"] = "rbxassetid://10709769732",
 			["users"] = "rbxassetid://10747373426",
 		}
 	end)()
