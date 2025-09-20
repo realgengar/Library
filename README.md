@@ -1,12 +1,12 @@
 
-# Redz UI Library V5
+# Redz UI Library V5 | Ramake 
 
 Uma biblioteca moderna de UI para Roblox, feita em Lua.  
 Permite criar **painéis, abas, botões, toggles, sliders, dropdowns e muito mais**, com suporte a **temas customizáveis** e **animações fluidas**.
 
 ---
 
-## 🚀 Início Rápido
+## 📦 Início Rápido
 
 ```lua
 local redzlib = loadstring(game:HttpGet("URL_DA_LIB_AQUI"))()
@@ -24,14 +24,14 @@ local Tab = Window:MakeTab({ Name = "Principal", Icon = "home" })
 
 ---
 
-## 📌 Exemplos de Componentes
+## 🍒 Exemplos de Componentes
 
-### 🔹 Seção
+### Seção
 ```lua
 Tab:AddSection("Configurações Gerais")
 ```
 
-### 🔹 Parágrafo
+### Parágrafo
 ```lua
 Tab:AddParagraph({
     Title = "Aviso",
@@ -39,7 +39,7 @@ Tab:AddParagraph({
 })
 ```
 
-### 🔹 Botão
+### Botão
 ```lua
 Tab:AddButton({
     Name = "Executar",
@@ -50,7 +50,7 @@ Tab:AddButton({
 })
 ```
 
-### 🔹 Toggle
+### Toggle
 ```lua
 Tab:AddToggle({
     Name = "Ativar Sistema",
@@ -61,7 +61,7 @@ Tab:AddToggle({
 })
 ```
 
-### 🔹 Dropdown
+### Dropdown
 ```lua
 Tab:AddDropdown({
     Name = "Escolha uma opção",
@@ -73,7 +73,7 @@ Tab:AddDropdown({
 })
 ```
 
-### 🔹 Slider
+### Slider
 ```lua
 Tab:AddSlider({
     Name = "Volume",
@@ -88,7 +88,7 @@ Tab:AddSlider({
 
 ---
 
-## 🎨 Temas
+## Temas
 
 ```lua
 redzlib:SetTheme("Dark")    -- Dark padrão
@@ -98,7 +98,7 @@ redzlib:SetTheme("Darker")  -- Escuro total
 
 ---
 
-## 🔔 Notificações
+## Notificações
 
 ```lua
 redzlib:Notify({
@@ -122,5 +122,4 @@ redzlib:Notify({
 ---
 
 ## 📌 Créditos
-Criado por **redz9999**.  
-Documentação e exemplos preparados para GitHub.  
+Criado por **redz9999 & magnus rs**.  
