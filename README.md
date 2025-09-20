@@ -109,6 +109,26 @@ redzlib:Notify({
 })
 ```
 
+## Notify Opcional Image
+```Lua
+-- normal; 
+redzlib:Notify({
+    Title = "Sucesso!",
+    Description = "Operação concluída.",
+    Duration = 5,
+    Type = "Success"
+})
+ -- Image
+redzlib:Notify({
+    Title = "Sucesso!",
+    Description = "Operação concluída.",
+    Image = "rbxassetid://",
+    Duration = 5,
+    Type = "Success"
+})
+```
+
+
 ---
 
 ## 🛠️ Recursos
