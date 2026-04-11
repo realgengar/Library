@@ -92,6 +92,8 @@ local redzlib = {
 			["users"] = "rbxassetid //10747373426",
             ["baby"] = "rbxassetid://10709769732",
 			["ghost"] = "rbxassetid://10723396107",
+			["boxes"] = "rbxassetid://10709782582",
+			["cpu"] = "rbxassetid://10709813383",
 			
 		}
 	end)()
