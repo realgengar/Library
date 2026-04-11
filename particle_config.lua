@@ -888,25 +888,20 @@ function redzlib:MakeWindow(Configs)
 		ClipsDescendants = true
 	})
 	
-	-- ══════════════════════════════════════════════════════
-	--  PARTICLE CONFIG — valores padrão (substituídos pelo
-	--  GitHub se o loader conseguir buscar o arquivo)
-	-- ══════════════════════════════════════════════════════
 	local ParticleConfig = {
 		MaxParticles     = 30,
 		SpawnRate        = 0.10,
 		ParticleSize     = { Min = 6,  Max = 10 },
 		ParticleSpeed    = { Min = 15, Max = 25  },
 		ParticleLifetime = 6.0,
-		GlowIntensity    = 0.3,   -- transparência do glow (0 = sólido, 1 = invisível)
-		WindDrift        = 0,     -- deriva lateral (pixels/s)
-		Gravity          = 0,     -- força vertical extra (positivo = desce, negativo = sobe)
+		GlowIntensity    = 0.3,  
+		WindDrift        = 0,     
+		Gravity          = 0,  
 	}
 
-	-- ── GitHub Config Loader ──────────────────────────────
-	-- URL raw do arquivo no seu repositório
+
 	local PARTICLE_CONFIG_URL = "https://raw.githubusercontent.com/scriptclient/Apis/main/particle_config.lua"
-	local RELOAD_INTERVAL     = 30  -- segundos entre cada reload automático
+	local RELOAD_INTERVAL     = 30 
 
 	local function ApplyConfig(data)
 		if type(data) ~= "table" then return end
@@ -961,8 +956,7 @@ function redzlib:MakeWindow(Configs)
 			FetchParticleConfig()
 		end
 	end)
-
-	-- ── Particle Engine ───────────────────────────────────
+		
 	local ActiveParticles = {}
 	local LastSpawn       = 0
 
@@ -1063,11 +1057,7 @@ function redzlib:MakeWindow(Configs)
 
 	local ParticleConnection = nil
 
-	-- ══════════════════════════════════════════
-	--  SISTEMA DE BACKGROUND — Partículas ou Imagem
-	-- ══════════════════════════════════════════
-
-	-- Frame para imagem de fundo
+	
 	local BackgroundImage = Create("ImageLabel", ParticleContainer, {
 		Size = UDim2.new(1, 0, 1, 0),
 		Position = UDim2.new(0, 0, 0, 0),
@@ -1078,7 +1068,7 @@ function redzlib:MakeWindow(Configs)
 		Visible = false
 	})
 
-	-- Overlay escuro sobre a imagem
+
 	local BackgroundDim = Create("Frame", ParticleContainer, {
 		Size = UDim2.new(1, 0, 1, 0),
 		BackgroundColor3 = Color3.fromRGB(0, 0, 0),
