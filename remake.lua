@@ -997,6 +997,12 @@ end
 
 
 	local ParticleConnection = nil
+
+	-- ══════════════════════════════════════════
+	--  SISTEMA DE BACKGROUND — Partículas ou Imagem
+	-- ══════════════════════════════════════════
+
+	-- Frame para imagem de fundo
 	local BackgroundImage = Create("ImageLabel", ParticleContainer, {
 		Size = UDim2.new(1, 0, 1, 0),
 		Position = UDim2.new(0, 0, 0, 0),
@@ -1007,7 +1013,7 @@ end
 		Visible = false
 	})
 
-	
+	-- Overlay escuro sobre a imagem
 	local BackgroundDim = Create("Frame", ParticleContainer, {
 		Size = UDim2.new(1, 0, 1, 0),
 		BackgroundColor3 = Color3.fromRGB(0, 0, 0),
@@ -1169,6 +1175,24 @@ end
 		MainFrame.Visible = not MainFrame.Visible
 	end
 	
+	-- ══════════════════════════════════════════
+	--  Window:SetBackground(mode, configs?)
+	--
+	--  Modos:
+	--    "Particles"  → sistema de partículas animadas
+	--    "Image"      → imagem de fundo estática
+	--    "None"       → desliga tudo
+	--
+	--  Exemplos:
+	--    Window:SetBackground("Particles")
+	--    Window:SetBackground("Image", "rbxassetid://XXXXXXX")
+	--    Window:SetBackground("Image", {
+	--        URL          = "rbxassetid://XXXXXXX",
+	--        Transparency = 0.3,   -- da imagem  (0 = opaca, 1 = invisível)
+	--        Dim          = 0.5,   -- escurecimento por cima (0 = sem, 1 = preto)
+	--    })
+	--    Window:SetBackground("None")
+	-- ══════════════════════════════════════════
 	function Window:SetBackground(mode, configs)
 		if mode == "Particles" then
 			StartParticles()
@@ -1194,6 +1218,7 @@ end
 		end
 	end
 
+	-- mantém compatibilidade com código antigo
 	function Window:SetThemeParticles(enabled)
 		Window:SetBackground(enabled and "Particles" or "None")
 	end
@@ -1532,7 +1557,7 @@ end
 				ScaleType = Enum.ScaleType.Crop,
 			})
 
-			
+			-- Cantos personalizados via UICorner + corner masks
 			local function MakeCornerMask(anchorX, anchorY, posX, posY, radius)
 				if radius <= 0 then return end
 				local Mask = Create("Frame", ImageHolder, {
@@ -1545,7 +1570,7 @@ end
 				})
 			end
 
-			-
+			-- Aplica um UICorner geral (maior dos quatro) como base
 			local maxCorner = math.max(CornerTL, CornerTR, CornerBL, CornerBR)
 			if maxCorner > 0 then
 				Create("UICorner", ImageLabel, {
@@ -1553,7 +1578,7 @@ end
 				})
 			end
 
-			-
+			-- Mascara os cantos que devem ser RETOS (raio = 0) sobrepondo com Frame da cor do hub
 			if CornerTL == 0 and maxCorner > 0 then MakeCornerMask(0, 0, 0, 0, maxCorner) end
 			if CornerTR == 0 and maxCorner > 0 then MakeCornerMask(1, 0, 1, 0, maxCorner) end
 			if CornerBL == 0 and maxCorner > 0 then MakeCornerMask(0, 1, 0, 1, maxCorner) end
@@ -2579,6 +2604,9 @@ end
 			return DiscordInvite
 		end]] --777
 
+		-- ══════════════════════════════════════════════════════
+		--  Tab:AddMiniMap
+		-- ══════════════════════════════════════════════════════
 		function Tab:AddMiniMap(Configs)
 			Configs = Configs or {}
 			local MapTitle   = Configs[1] or Configs.Title or Configs.Name or "Mini Map"
@@ -2586,7 +2614,7 @@ end
 			local MapZoom    = Configs.Zoom or 0.04
 			local ShowOthers = Configs.ShowPlayers ~= false
 
-			local Holder = Create("Frame", Tab.Cont, {
+			local Holder = Create("Frame", Container, {
 				Size = UDim2.new(1, 0, 0, MapSize + 22),
 				BackgroundTransparency = 1,
 				Name = "Option"
@@ -2697,11 +2725,10 @@ end
 				end
 			end)
 
-			local compassDirs = {
+			for _, c in ipairs({
 				{t="N",ax=0.5,ay=0,px=0.5,py=0.02},{t="S",ax=0.5,ay=1,px=0.5,py=0.98},
 				{t="W",ax=0,ay=0.5,px=0.02,py=0.5},{t="E",ax=1,ay=0.5,px=0.98,py=0.5}
-			}
-			for _, c in ipairs(compassDirs) do
+			}) do
 				InsertTheme(Create("TextLabel", DotsLayer, {
 					Size = UDim2.fromOffset(10, 10),
 					AnchorPoint = Vector2.new(c.ax, c.ay),
@@ -2726,6 +2753,9 @@ end
 			return MiniMap
 		end
 
+		-- ══════════════════════════════════════════════════════
+		--  Tab:AddFeedback
+		-- ══════════════════════════════════════════════════════
 		function Tab:AddFeedback(Configs)
 			Configs = Configs or {}
 			local FTitle       = Configs[1] or Configs.Title or Configs.Name or "Feedback"
@@ -2733,7 +2763,7 @@ end
 			local FMaxStars    = Configs.Stars or 5
 			local Callback     = Funcs:GetCallback(Configs, 2)
 
-			local Holder = InsertTheme(Create("Frame", Tab.Cont, {
+			local Holder = InsertTheme(Create("Frame", Container, {
 				Size = UDim2.new(1, 0, 0, 105),
 				BackgroundColor3 = Theme["Color Hub 2"],
 				Name = "Option"
@@ -2846,7 +2876,9 @@ end
 			return Feedback
 		end
 
-	
+		-- ══════════════════════════════════════════════════════
+		--  Tab:AddChangelog
+		-- ══════════════════════════════════════════════════════
 		function Tab:AddChangelog(Configs)
 			Configs = Configs or {}
 			local CLTitle  = (type(Configs.Title) == "string" and Configs.Title)
@@ -2860,7 +2892,7 @@ end
 				removed = Color3.fromRGB(220,80,80), change = Color3.fromRGB(220,170,50)
 			}
 
-			local Holder = Create("Frame", Tab.Cont, {
+			local Holder = Create("Frame", Container, {
 				Size = UDim2.new(1, 0, 0, 0),
 				AutomaticSize = "Y",
 				BackgroundTransparency = 1,
@@ -3003,7 +3035,9 @@ end
 			return Changelog
 		end
 
-	
+		-- ══════════════════════════════════════════════════════
+		--  Tab:AddReportBug
+		-- ══════════════════════════════════════════════════════
 		function Tab:AddReportBug(Configs)
 			Configs = Configs or {}
 			local RBTitle      = Configs[1] or Configs.Title or Configs.Name or "Reportar Bug"
@@ -3012,7 +3046,7 @@ end
 			local RBSysInfo    = Configs.IncludeSystemInfo ~= false
 			local Callback     = Configs.Callback or function() end
 
-			local Holder = InsertTheme(Create("Frame", Tab.Cont, {
+			local Holder = InsertTheme(Create("Frame", Container, {
 				Size = UDim2.new(1, 0, 0, 148),
 				BackgroundColor3 = Theme["Color Hub 2"],
 				Name = "Option",
@@ -3174,7 +3208,6 @@ end
 					SendBtn.Text = "Enviar Report"
 					return
 				end
-
 				local sysInfo = {}
 				if RBSysInfo then
 					local lp = Players.LocalPlayer
@@ -3186,16 +3219,13 @@ end
 						Players = #Players:GetPlayers()
 					}
 				end
-
 				local payload = {
 					category = selectedCategory,
 					description = desc,
 					alwaysHappens = alwaysHappens,
 					systemInfo = sysInfo
 				}
-
 				SendBtn.Text = "Enviando..."
-
 				if RBWebhook ~= "" and HttpService then
 					pcall(function()
 						HttpService:PostAsync(
@@ -3216,7 +3246,6 @@ end
 						)
 					end)
 				end
-
 				task.spawn(Callback, payload)
 				SendBtn.Text = "Report Enviado ✓"
 				SendBtn.BackgroundColor3 = Color3.fromRGB(67, 181, 129)
