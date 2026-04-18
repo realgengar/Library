@@ -2603,6 +2603,675 @@ end
 			function DiscordInvite:Visible(...) Funcs:ToggleVisible(InviteHolder, ...) end
 			return DiscordInvite
 		end]] --777
+
+		-- ══════════════════════════════════════════════════════
+		--  Tab:AddMiniMap
+		-- ══════════════════════════════════════════════════════
+		function Tab:AddMiniMap(Configs)
+			Configs = Configs or {}
+			local MapTitle   = Configs[1] or Configs.Title or Configs.Name or "Mini Map"
+			local MapSize    = Configs.Size or 140
+			local MapZoom    = Configs.Zoom or 0.04
+			local ShowOthers = Configs.ShowPlayers ~= false
+
+			local Holder = Create("Frame", Tab.Cont, {
+				Size = UDim2.new(1, 0, 0, MapSize + 22),
+				BackgroundTransparency = 1,
+				Name = "Option"
+			})
+
+			InsertTheme(Create("TextLabel", Holder, {
+				Size = UDim2.new(1, 0, 0, 14),
+				Position = UDim2.new(0, 10, 0, 0),
+				BackgroundTransparency = 1,
+				Text = MapTitle,
+				Font = Enum.Font.FredokaOne,
+				TextSize = 10,
+				TextXAlignment = "Left",
+				TextColor3 = Theme["Color Text"]
+			}), "Text")
+
+			local MapFrame = InsertTheme(Create("Frame", Holder, {
+				Size = UDim2.new(1, 0, 0, MapSize),
+				Position = UDim2.new(0, 0, 0, 18),
+				BackgroundColor3 = Theme["Color Hub 2"],
+				ClipsDescendants = true
+			}), "Frame")
+			Make("Corner", MapFrame)
+			Make("Stroke", MapFrame)
+
+			local VP = Create("ViewportFrame", MapFrame, {
+				Size = UDim2.new(1, 0, 1, 0),
+				BackgroundTransparency = 1,
+				BackgroundColor3 = Color3.fromRGB(0, 0, 0),
+				LightColor = Color3.fromRGB(255, 255, 255),
+				Ambient = Color3.fromRGB(180, 180, 180)
+			})
+
+			local VPCam = Instance.new("Camera")
+			VPCam.CameraType = Enum.CameraType.Scriptable
+			VPCam.Parent = VP
+			VP.CurrentCamera = VPCam
+
+			local DotsLayer = Create("Frame", MapFrame, {
+				Size = UDim2.new(1, 0, 1, 0),
+				BackgroundTransparency = 1,
+				ZIndex = 5
+			})
+
+			local LocalDot = Create("Frame", DotsLayer, {
+				Size = UDim2.fromOffset(6, 6),
+				AnchorPoint = Vector2.new(0.5, 0.5),
+				BackgroundColor3 = Color3.fromRGB(255, 255, 255),
+				ZIndex = 6
+			})
+			Create("UICorner", LocalDot, { CornerRadius = UDim.new(1, 0) })
+
+			local PlayerDots = {}
+			local function GetOrCreateDot(player)
+				if PlayerDots[player] then return PlayerDots[player] end
+				local dot = Create("Frame", DotsLayer, {
+					Size = UDim2.fromOffset(5, 5),
+					AnchorPoint = Vector2.new(0.5, 0.5),
+					BackgroundColor3 = Theme["Color Theme"],
+					ZIndex = 6
+				})
+				Create("UICorner", dot, { CornerRadius = UDim.new(1, 0) })
+				InsertTheme(Create("TextLabel", dot, {
+					Size = UDim2.new(0, 50, 0, 8),
+					Position = UDim2.new(0.5, 0, 0, -10),
+					AnchorPoint = Vector2.new(0.5, 1),
+					BackgroundTransparency = 1,
+					Text = player.Name,
+					Font = Enum.Font.Gotham,
+					TextSize = 7,
+					TextColor3 = Theme["Color Text"],
+					ZIndex = 7
+				}), "Text")
+				PlayerDots[player] = dot
+				return dot
+			end
+
+			Players.PlayerRemoving:Connect(function(p)
+				if PlayerDots[p] then PlayerDots[p]:Destroy() PlayerDots[p] = nil end
+			end)
+
+			local MapConnection = RunService.Heartbeat:Connect(function()
+				local lp = Players.LocalPlayer
+				if not lp or not lp.Character then return end
+				local root = lp.Character:FindFirstChild("HumanoidRootPart")
+				if not root then return end
+				local pos = root.Position
+				VPCam.CFrame = CFrame.new(
+					Vector3.new(pos.X, pos.Y + (1 / MapZoom), pos.Z),
+					Vector3.new(pos.X, pos.Y, pos.Z)
+				)
+				VPCam.FieldOfView = 1 / MapZoom * 10
+				LocalDot.Position = UDim2.fromScale(0.5, 0.5)
+				if ShowOthers then
+					for _, p in ipairs(Players:GetPlayers()) do
+						if p ~= lp and p.Character then
+							local r2 = p.Character:FindFirstChild("HumanoidRootPart")
+							if r2 then
+								local delta = r2.Position - pos
+								local nx = 0.5 + (delta.X * MapZoom)
+								local ny = 0.5 + (delta.Z * MapZoom)
+								local dot = GetOrCreateDot(p)
+								dot.Position = UDim2.fromScale(math.clamp(nx, 0.02, 0.98), math.clamp(ny, 0.02, 0.98))
+								dot.Visible = math.abs(nx) <= 1 and math.abs(ny) <= 1
+							end
+						end
+					end
+				end
+			end)
+
+			local compassDirs = {
+				{t="N",ax=0.5,ay=0,px=0.5,py=0.02},{t="S",ax=0.5,ay=1,px=0.5,py=0.98},
+				{t="W",ax=0,ay=0.5,px=0.02,py=0.5},{t="E",ax=1,ay=0.5,px=0.98,py=0.5}
+			}
+			for _, c in ipairs(compassDirs) do
+				InsertTheme(Create("TextLabel", DotsLayer, {
+					Size = UDim2.fromOffset(10, 10),
+					AnchorPoint = Vector2.new(c.ax, c.ay),
+					Position = UDim2.fromScale(c.px, c.py),
+					BackgroundTransparency = 1,
+					Text = c.t,
+					Font = Enum.Font.GothamBold,
+					TextSize = 7,
+					TextColor3 = Theme["Color Dark Text"],
+					ZIndex = 7
+				}), "DarkText")
+			end
+
+			local MiniMap = {}
+			function MiniMap:Visible(...) Funcs:ToggleVisible(Holder, ...) end
+			function MiniMap:Destroy() MapConnection:Disconnect() Holder:Destroy() end
+			function MiniMap:SetZoom(z) MapZoom = z end
+			function MiniMap:TogglePlayers(bool)
+				ShowOthers = bool
+				for _, dot in pairs(PlayerDots) do dot.Visible = bool end
+			end
+			return MiniMap
+		end
+
+		-- ══════════════════════════════════════════════════════
+		--  Tab:AddFeedback
+		-- ══════════════════════════════════════════════════════
+		function Tab:AddFeedback(Configs)
+			Configs = Configs or {}
+			local FTitle       = Configs[1] or Configs.Title or Configs.Name or "Feedback"
+			local FPlaceholder = Configs.Placeholder or "Escreva sua sugestão ou crítica..."
+			local FMaxStars    = Configs.Stars or 5
+			local Callback     = Funcs:GetCallback(Configs, 2)
+
+			local Holder = InsertTheme(Create("Frame", Tab.Cont, {
+				Size = UDim2.new(1, 0, 0, 105),
+				BackgroundColor3 = Theme["Color Hub 2"],
+				Name = "Option"
+			}), "Frame")
+			Make("Corner", Holder)
+			Make("Stroke", Holder)
+
+			InsertTheme(Create("TextLabel", Holder, {
+				Size = UDim2.new(1, -15, 0, 14),
+				Position = UDim2.new(0, 10, 0, 7),
+				BackgroundTransparency = 1,
+				Text = FTitle,
+				Font = Enum.Font.FredokaOne,
+				TextSize = 11,
+				TextXAlignment = "Left",
+				TextColor3 = Theme["Color Text"]
+			}), "Text")
+
+			local StarRow = Create("Frame", Holder, {
+				Size = UDim2.new(0, FMaxStars * 18, 0, 16),
+				Position = UDim2.new(0, 10, 0, 26),
+				BackgroundTransparency = 1
+			})
+
+			local currentRating = 0
+			local StarButtons = {}
+
+			local function UpdateStars(n)
+				currentRating = n
+				for i, sb in ipairs(StarButtons) do
+					sb.ImageColor3 = i <= n and Color3.fromRGB(255, 200, 50) or Theme["Color Stroke"]
+				end
+			end
+
+			for i = 1, FMaxStars do
+				local sb = InsertTheme(Create("ImageButton", StarRow, {
+					Size = UDim2.fromOffset(14, 14),
+					Position = UDim2.fromOffset((i-1)*17, 1),
+					BackgroundTransparency = 1,
+					Image = "rbxassetid://10723376114",
+					ImageColor3 = Theme["Color Stroke"],
+					AutoButtonColor = false
+				}), "Stroke")
+				table.insert(StarButtons, sb)
+				sb.Activated:Connect(function() UpdateStars(i) end)
+			end
+
+			local BoxFrame = InsertTheme(Create("Frame", Holder, {
+				Size = UDim2.new(1, -18, 0, 30),
+				Position = UDim2.new(0, 9, 0, 48),
+				BackgroundColor3 = Theme["Color Stroke"]
+			}), "Stroke")
+			Make("Corner", BoxFrame, UDim.new(0, 5))
+
+			local InputBox = InsertTheme(Create("TextBox", BoxFrame, {
+				Size = UDim2.new(1, -12, 1, 0),
+				Position = UDim2.new(0, 6, 0, 0),
+				BackgroundTransparency = 1,
+				Font = Enum.Font.Gotham,
+				TextSize = 9,
+				TextXAlignment = "Left",
+				TextWrapped = true,
+				ClearTextOnFocus = false,
+				PlaceholderText = FPlaceholder,
+				Text = "",
+				TextColor3 = Theme["Color Text"]
+			}), "Text")
+
+			local SendBtn = InsertTheme(Create("TextButton", Holder, {
+				Size = UDim2.new(1, -18, 0, 16),
+				Position = UDim2.new(0, 9, 0, 84),
+				BackgroundColor3 = Theme["Color Theme"],
+				Font = Enum.Font.GothamBold,
+				TextSize = 9,
+				Text = "Enviar Feedback",
+				TextColor3 = Theme["Color Text"],
+				AutoButtonColor = false
+			}), "Theme")
+			Make("Corner", SendBtn, UDim.new(0, 5))
+
+			SendBtn.MouseEnter:Connect(function() CreateTween({SendBtn, "BackgroundTransparency", 0.3, 0.15}) end)
+			SendBtn.MouseLeave:Connect(function() CreateTween({SendBtn, "BackgroundTransparency", 0, 0.15}) end)
+
+			local Sent = false
+			SendBtn.Activated:Connect(function()
+				if Sent then return end
+				if currentRating == 0 then
+					SendBtn.Text = "Selecione uma nota!"
+					task.wait(2)
+					SendBtn.Text = "Enviar Feedback"
+					return
+				end
+				Sent = true
+				SendBtn.Text = "Obrigado! ✓"
+				SendBtn.BackgroundColor3 = Color3.fromRGB(67, 181, 129)
+				Funcs:FireCallback(Callback, currentRating, InputBox.Text)
+				task.wait(3)
+				if SendBtn and SendBtn.Parent then
+					Sent = false
+					SendBtn.Text = "Enviar Feedback"
+					SendBtn.BackgroundColor3 = Theme["Color Theme"]
+				end
+			end)
+
+			local Feedback = {}
+			function Feedback:Visible(...) Funcs:ToggleVisible(Holder, ...) end
+			function Feedback:Destroy() Holder:Destroy() end
+			function Feedback:Reset() UpdateStars(0) InputBox.Text = "" Sent = false SendBtn.Text = "Enviar Feedback" end
+			function Feedback:GetRating() return currentRating end
+			return Feedback
+		end
+
+		-- ══════════════════════════════════════════════════════
+		--  Tab:AddChangelog
+		-- ══════════════════════════════════════════════════════
+		function Tab:AddChangelog(Configs)
+			Configs = Configs or {}
+			local CLTitle  = (type(Configs.Title) == "string" and Configs.Title)
+				or (type(Configs.Name) == "string" and Configs.Name)
+				or (type(Configs[1]) == "string" and Configs[1])
+				or "Changelog"
+			local Versions = (type(Configs[1]) == "table") and Configs or Configs.Versions or {}
+
+			local BadgeColors = {
+				new = Color3.fromRGB(88,181,120), fix = Color3.fromRGB(88,150,242),
+				removed = Color3.fromRGB(220,80,80), change = Color3.fromRGB(220,170,50)
+			}
+
+			local Holder = Create("Frame", Tab.Cont, {
+				Size = UDim2.new(1, 0, 0, 0),
+				AutomaticSize = "Y",
+				BackgroundTransparency = 1,
+				Name = "Option"
+			})
+
+			local HeaderBtn = InsertTheme(Create("TextButton", Holder, {
+				Size = UDim2.new(1, 0, 0, 24),
+				BackgroundColor3 = Theme["Color Hub 2"],
+				Font = Enum.Font.FredokaOne,
+				Text = "  📋  " .. CLTitle,
+				TextSize = 11,
+				TextXAlignment = "Left",
+				TextColor3 = Theme["Color Text"],
+				AutoButtonColor = false
+			}), "Frame")
+			Make("Corner", HeaderBtn)
+			Make("Stroke", HeaderBtn)
+
+			local ArrowLabel = InsertTheme(Create("TextLabel", HeaderBtn, {
+				Size = UDim2.fromOffset(14, 14),
+				Position = UDim2.new(1, -18, 0.5, 0),
+				AnchorPoint = Vector2.new(1, 0.5),
+				BackgroundTransparency = 1,
+				Text = "▾",
+				Font = Enum.Font.GothamBold,
+				TextSize = 12,
+				TextColor3 = Theme["Color Dark Text"]
+			}), "DarkText")
+
+			local VersionsContainer = Create("Frame", Holder, {
+				Size = UDim2.new(1, 0, 0, 0),
+				AutomaticSize = "Y",
+				Position = UDim2.new(0, 0, 0, 28),
+				BackgroundTransparency = 1
+			})
+			Create("UIListLayout", VersionsContainer, { Padding = UDim.new(0, 4) })
+
+			local Expanded = true
+			HeaderBtn.Activated:Connect(function()
+				Expanded = not Expanded
+				VersionsContainer.Visible = Expanded
+				ArrowLabel.Text = Expanded and "▾" or "▸"
+			end)
+
+			for _, verData in ipairs(Versions) do
+				local VBlock = InsertTheme(Create("Frame", VersionsContainer, {
+					Size = UDim2.new(1, 0, 0, 0),
+					AutomaticSize = "Y",
+					BackgroundColor3 = Theme["Color Hub 2"]
+				}), "Frame")
+				Make("Corner", VBlock)
+				Make("Stroke", VBlock)
+
+				local VHeader = Create("TextButton", VBlock, {
+					Size = UDim2.new(1, 0, 0, 22),
+					BackgroundTransparency = 1,
+					Text = "",
+					AutoButtonColor = false
+				})
+
+				InsertTheme(Create("TextLabel", VHeader, {
+					Size = UDim2.new(0.6, 0, 1, 0),
+					Position = UDim2.new(0, 10, 0, 0),
+					BackgroundTransparency = 1,
+					Text = "v" .. (verData.Version or "?"),
+					Font = Enum.Font.GothamBold,
+					TextSize = 10,
+					TextXAlignment = "Left",
+					TextColor3 = Theme["Color Text"]
+				}), "Text")
+
+				InsertTheme(Create("TextLabel", VHeader, {
+					Size = UDim2.new(0.4, -10, 1, 0),
+					Position = UDim2.new(0.6, 0, 0, 0),
+					BackgroundTransparency = 1,
+					Text = verData.Date or "",
+					Font = Enum.Font.Gotham,
+					TextSize = 8,
+					TextXAlignment = "Right",
+					TextColor3 = Theme["Color Dark Text"]
+				}), "DarkText")
+
+				local ChangesList = Create("Frame", VBlock, {
+					Size = UDim2.new(1, -16, 0, 0),
+					AutomaticSize = "Y",
+					Position = UDim2.new(0, 8, 0, 24),
+					BackgroundTransparency = 1
+				})
+				Create("UIListLayout", ChangesList, { Padding = UDim.new(0, 3) })
+				Create("UIPadding", ChangesList, { PaddingBottom = UDim.new(0, 6) })
+
+				local VExp = true
+				VHeader.Activated:Connect(function()
+					VExp = not VExp
+					ChangesList.Visible = VExp
+				end)
+
+				for _, change in ipairs(verData.Changes or {}) do
+					local cType  = change[1] or "new"
+					local cText  = change[2] or ""
+					local bColor = BadgeColors[cType] or BadgeColors.new
+
+					local Row = Create("Frame", ChangesList, {
+						Size = UDim2.new(1, 0, 0, 0),
+						AutomaticSize = "Y",
+						BackgroundTransparency = 1
+					})
+
+					local Badge = Create("TextLabel", Row, {
+						Size = UDim2.fromOffset(42, 12),
+						Position = UDim2.new(0, 0, 0, 1),
+						BackgroundColor3 = bColor,
+						BackgroundTransparency = 0.2,
+						Text = cType:upper(),
+						Font = Enum.Font.GothamBold,
+						TextSize = 7,
+						TextColor3 = Color3.fromRGB(255, 255, 255)
+					})
+					Make("Corner", Badge, UDim.new(0, 3))
+
+					InsertTheme(Create("TextLabel", Row, {
+						Size = UDim2.new(1, -50, 0, 0),
+						AutomaticSize = "Y",
+						Position = UDim2.new(0, 48, 0, 0),
+						BackgroundTransparency = 1,
+						Text = cText,
+						Font = Enum.Font.Gotham,
+						TextSize = 9,
+						TextXAlignment = "Left",
+						TextWrapped = true,
+						TextColor3 = Theme["Color Dark Text"]
+					}), "DarkText")
+				end
+			end
+
+			local Changelog = {}
+			function Changelog:Visible(...) Funcs:ToggleVisible(Holder, ...) end
+			function Changelog:Destroy() Holder:Destroy() end
+			return Changelog
+		end
+
+		-- ══════════════════════════════════════════════════════
+		--  Tab:AddReportBug
+		-- ══════════════════════════════════════════════════════
+		function Tab:AddReportBug(Configs)
+			Configs = Configs or {}
+			local RBTitle      = Configs[1] or Configs.Title or Configs.Name or "Reportar Bug"
+			local RBWebhook    = Configs.Webhook or ""
+			local RBCategories = Configs.Categories or {"Crash", "Visual", "Gameplay", "Outro"}
+			local RBSysInfo    = Configs.IncludeSystemInfo ~= false
+			local Callback     = Configs.Callback or function() end
+
+			local Holder = InsertTheme(Create("Frame", Tab.Cont, {
+				Size = UDim2.new(1, 0, 0, 148),
+				BackgroundColor3 = Theme["Color Hub 2"],
+				Name = "Option",
+				ClipsDescendants = false
+			}), "Frame")
+			Make("Corner", Holder)
+			Make("Stroke", Holder)
+
+			InsertTheme(Create("TextLabel", Holder, {
+				Size = UDim2.new(1, -15, 0, 14),
+				Position = UDim2.new(0, 10, 0, 7),
+				BackgroundTransparency = 1,
+				Text = "🐛  " .. RBTitle,
+				Font = Enum.Font.FredokaOne,
+				TextSize = 11,
+				TextXAlignment = "Left",
+				TextColor3 = Theme["Color Text"]
+			}), "Text")
+
+			local DescFrame = InsertTheme(Create("Frame", Holder, {
+				Size = UDim2.new(1, -18, 0, 38),
+				Position = UDim2.new(0, 9, 0, 26),
+				BackgroundColor3 = Theme["Color Stroke"]
+			}), "Stroke")
+			Make("Corner", DescFrame, UDim.new(0, 5))
+
+			local DescBox = InsertTheme(Create("TextBox", DescFrame, {
+				Size = UDim2.new(1, -10, 1, 0),
+				Position = UDim2.new(0, 5, 0, 0),
+				BackgroundTransparency = 1,
+				Font = Enum.Font.Gotham,
+				TextSize = 9,
+				TextXAlignment = "Left",
+				TextYAlignment = "Top",
+				TextWrapped = true,
+				ClearTextOnFocus = false,
+				PlaceholderText = "Descreva o bug com o máximo de detalhes...",
+				Text = "",
+				TextColor3 = Theme["Color Text"]
+			}), "Text")
+
+			InsertTheme(Create("TextLabel", Holder, {
+				Size = UDim2.new(0, 60, 0, 12),
+				Position = UDim2.new(0, 9, 0, 70),
+				BackgroundTransparency = 1,
+				Text = "Categoria:",
+				Font = Enum.Font.GothamBold,
+				TextSize = 8,
+				TextXAlignment = "Left",
+				TextColor3 = Theme["Color Dark Text"]
+			}), "DarkText")
+
+			local CatRow = Create("Frame", Holder, {
+				Size = UDim2.new(1, -18, 0, 16),
+				Position = UDim2.new(0, 9, 0, 84),
+				BackgroundTransparency = 1
+			})
+			Create("UIListLayout", CatRow, {
+				FillDirection = "Horizontal",
+				Padding = UDim.new(0, 4),
+				VerticalAlignment = "Center"
+			})
+
+			local selectedCategory = RBCategories[1]
+			local CatBtns = {}
+
+			local function SelectCategory(name)
+				selectedCategory = name
+				for _, cb in ipairs(CatBtns) do
+					CreateTween({cb, "BackgroundTransparency", cb.Text == name and 0 or 0.6, 0.15})
+				end
+			end
+
+			for _, cat in ipairs(RBCategories) do
+				local cb = InsertTheme(Create("TextButton", CatRow, {
+					Size = UDim2.new(0, 0, 1, 0),
+					AutomaticSize = "X",
+					BackgroundColor3 = Theme["Color Theme"],
+					BackgroundTransparency = 0.6,
+					Font = Enum.Font.GothamBold,
+					TextSize = 8,
+					Text = cat,
+					TextColor3 = Theme["Color Text"],
+					AutoButtonColor = false
+				}), "Theme")
+				Make("Corner", cb, UDim.new(0, 4))
+				Create("UIPadding", cb, { PaddingLeft = UDim.new(0, 5), PaddingRight = UDim.new(0, 5) })
+				table.insert(CatBtns, cb)
+				cb.Activated:Connect(function() SelectCategory(cat) end)
+			end
+			SelectCategory(selectedCategory)
+
+			local AlwaysRow = Create("Frame", Holder, {
+				Size = UDim2.new(1, -18, 0, 12),
+				Position = UDim2.new(0, 9, 0, 106),
+				BackgroundTransparency = 1
+			})
+
+			local AlwaysCheck = InsertTheme(Create("Frame", AlwaysRow, {
+				Size = UDim2.fromOffset(10, 10),
+				Position = UDim2.new(0, 0, 0.5, 0),
+				AnchorPoint = Vector2.new(0, 0.5),
+				BackgroundColor3 = Theme["Color Stroke"]
+			}), "Stroke")
+			Make("Corner", AlwaysCheck, UDim.new(0, 3))
+			Make("Stroke", AlwaysCheck)
+
+			local AlwaysTick = InsertTheme(Create("Frame", AlwaysCheck, {
+				Size = UDim2.fromOffset(6, 6),
+				Position = UDim2.new(0.5, 0, 0.5, 0),
+				AnchorPoint = Vector2.new(0.5, 0.5),
+				BackgroundColor3 = Theme["Color Theme"],
+				BackgroundTransparency = 1
+			}), "Theme")
+			Make("Corner", AlwaysTick, UDim.new(0.5, 0))
+
+			InsertTheme(Create("TextLabel", AlwaysRow, {
+				Size = UDim2.new(1, -16, 1, 0),
+				Position = UDim2.new(0, 15, 0, 0),
+				BackgroundTransparency = 1,
+				Text = "Este bug acontece sempre?",
+				Font = Enum.Font.Gotham,
+				TextSize = 8,
+				TextXAlignment = "Left",
+				TextColor3 = Theme["Color Dark Text"]
+			}), "DarkText")
+
+			local alwaysHappens = false
+			local AlwaysBtn = Create("TextButton", AlwaysRow, {
+				Size = UDim2.new(1, 0, 1, 0),
+				BackgroundTransparency = 1,
+				Text = ""
+			})
+			AlwaysBtn.Activated:Connect(function()
+				alwaysHappens = not alwaysHappens
+				CreateTween({AlwaysTick, "BackgroundTransparency", alwaysHappens and 0 or 1, 0.15})
+			end)
+
+			local SendBtn = InsertTheme(Create("TextButton", Holder, {
+				Size = UDim2.new(1, -18, 0, 16),
+				Position = UDim2.new(0, 9, 0, 126),
+				BackgroundColor3 = Theme["Color Theme"],
+				Font = Enum.Font.GothamBold,
+				TextSize = 9,
+				Text = "Enviar Report",
+				TextColor3 = Theme["Color Text"],
+				AutoButtonColor = false
+			}), "Theme")
+			Make("Corner", SendBtn, UDim.new(0, 5))
+
+			SendBtn.MouseEnter:Connect(function() CreateTween({SendBtn, "BackgroundTransparency", 0.3, 0.15}) end)
+			SendBtn.MouseLeave:Connect(function() CreateTween({SendBtn, "BackgroundTransparency", 0, 0.15}) end)
+
+			SendBtn.Activated:Connect(function()
+				local desc = DescBox.Text
+				if desc:gsub(" ", ""):len() < 5 then
+					SendBtn.Text = "Descreva melhor o bug!"
+					task.wait(2)
+					SendBtn.Text = "Enviar Report"
+					return
+				end
+
+				local sysInfo = {}
+				if RBSysInfo then
+					local lp = Players.LocalPlayer
+					sysInfo = {
+						ScriptVersion = redzlib.Info and redzlib.Info.Version or "?",
+						JobId = game.JobId,
+						PlaceId = game.PlaceId,
+						Ping = lp and math.floor(lp.NetworkPing * 1000) .. "ms" or "N/A",
+						Players = #Players:GetPlayers()
+					}
+				end
+
+				local payload = {
+					category = selectedCategory,
+					description = desc,
+					alwaysHappens = alwaysHappens,
+					systemInfo = sysInfo
+				}
+
+				SendBtn.Text = "Enviando..."
+
+				if RBWebhook ~= "" and HttpService then
+					pcall(function()
+						HttpService:PostAsync(
+							RBWebhook,
+							HttpService:JSONEncode({
+								embeds = {{
+									title = "🐛 Bug Report — " .. selectedCategory,
+									description = desc,
+									color = 15158332,
+									fields = {
+										{ name = "Acontece sempre?", value = tostring(alwaysHappens), inline = true },
+										{ name = "Versão", value = tostring(sysInfo.ScriptVersion), inline = true },
+										{ name = "JobId", value = tostring(game.JobId), inline = false }
+									}
+								}}
+							}),
+							Enum.HttpContentType.ApplicationJson
+						)
+					end)
+				end
+
+				task.spawn(Callback, payload)
+				SendBtn.Text = "Report Enviado ✓"
+				SendBtn.BackgroundColor3 = Color3.fromRGB(67, 181, 129)
+				task.wait(3)
+				if SendBtn and SendBtn.Parent then
+					SendBtn.Text = "Enviar Report"
+					SendBtn.BackgroundColor3 = Theme["Color Theme"]
+					DescBox.Text = ""
+					alwaysHappens = false
+					CreateTween({AlwaysTick, "BackgroundTransparency", 1, 0.15})
+					SelectCategory(RBCategories[1])
+				end
+			end)
+
+			local ReportBug = {}
+			function ReportBug:Visible(...) Funcs:ToggleVisible(Holder, ...) end
+			function ReportBug:Destroy() Holder:Destroy() end
+			return ReportBug
+		end
+
 		return Tab
 	end
 	
@@ -2610,780 +3279,6 @@ end
 	MinimizeButton.Activated:Connect(Window.MinimizeBtn)
 
 	return Window
-end
-
--- ══════════════════════════════════════════════════════════════════
---  NOVOS MÉTODOS DE TAB — injetados via monkey-patch após MakeWindow
---  Uso: chame redzlib:MakeWindow() normalmente; os métodos abaixo
---  ficam disponíveis em qualquer Tab retornado por Window:AddTab()
--- ══════════════════════════════════════════════════════════════════
-
--- ─────────────────────────────────────────
---  Tab:AddMiniMap
---  Renderiza um ViewportFrame top-down em
---  tempo real com pontos para cada player.
--- ─────────────────────────────────────────
-local _OrigAddTab
-do
-	-- Guardamos referência para o MakeWindow original e injetamos
-	-- os novos métodos no objeto Tab antes de retorná-lo.
-	local _OrigMakeWindow = redzlib.MakeWindow
-	redzlib.MakeWindow = function(self, Configs)
-		local Window = _OrigMakeWindow(self, Configs)
-		local _OrigAddTab = Window.AddTab
-		Window.AddTab = function(winSelf, tabConfigs)
-			local Tab = _OrigAddTab(winSelf, tabConfigs)
-
-			-- ══════════════════════════════
-			--  Tab:AddMiniMap
-			-- ══════════════════════════════
-			function Tab:AddMiniMap(Configs)
-				Configs = Configs or {}
-				local MapTitle   = Configs[1] or Configs.Title or Configs.Name or "Mini Map"
-				local MapSize    = Configs.Size or 140
-				local MapZoom    = Configs.Zoom or 0.04
-				local ShowOthers = Configs.ShowPlayers ~= false
-
-				-- Holder
-				local Holder = Create("Frame", Tab.Cont, {
-					Size = UDim2.new(1, 0, 0, MapSize + 22),
-					BackgroundTransparency = 1,
-					Name = "Option"
-				})
-
-				-- Título
-				InsertTheme(Create("TextLabel", Holder, {
-					Size = UDim2.new(1, 0, 0, 14),
-					Position = UDim2.new(0, 10, 0, 0),
-					BackgroundTransparency = 1,
-					Text = MapTitle,
-					Font = Enum.Font.FredokaOne,
-					TextSize = 10,
-					TextXAlignment = "Left",
-					TextColor3 = Theme["Color Text"]
-				}), "Text")
-
-				-- Frame de fundo
-				local MapFrame = InsertTheme(Create("Frame", Holder, {
-					Size = UDim2.new(1, 0, 0, MapSize),
-					Position = UDim2.new(0, 0, 0, 18),
-					BackgroundColor3 = Theme["Color Hub 2"],
-					ClipsDescendants = true
-				}), "Frame")
-				Make("Corner", MapFrame)
-				Make("Stroke", MapFrame)
-
-				-- ViewportFrame para renderizar o mundo
-				local VP = Create("ViewportFrame", MapFrame, {
-					Size = UDim2.new(1, 0, 1, 0),
-					BackgroundTransparency = 1,
-					BackgroundColor3 = Color3.fromRGB(0, 0, 0),
-					LightColor = Color3.fromRGB(255, 255, 255),
-					Ambient = Color3.fromRGB(180, 180, 180)
-				})
-
-				-- Câmera top-down
-				local VPCam = Instance.new("Camera")
-				VPCam.CameraType = Enum.CameraType.Scriptable
-				VPCam.Parent = VP
-				VP.CurrentCamera = VPCam
-
-				-- Overlay de pontos dos players (sobre o VP)
-				local DotsLayer = Create("Frame", MapFrame, {
-					Size = UDim2.new(1, 0, 1, 0),
-					BackgroundTransparency = 1,
-					ZIndex = 5
-				})
-
-				-- Ponto local (branco)
-				local LocalDot = Create("Frame", DotsLayer, {
-					Size = UDim2.fromOffset(6, 6),
-					AnchorPoint = Vector2.new(0.5, 0.5),
-					BackgroundColor3 = Color3.fromRGB(255, 255, 255),
-					ZIndex = 6
-				})
-				Create("UICorner", LocalDot, { CornerRadius = UDim.new(1, 0) })
-
-				-- Pool de pontos de outros players
-				local PlayerDots = {}
-
-				local function GetOrCreateDot(player)
-					if PlayerDots[player] then return PlayerDots[player] end
-					local dot = Create("Frame", DotsLayer, {
-						Size = UDim2.fromOffset(5, 5),
-						AnchorPoint = Vector2.new(0.5, 0.5),
-						BackgroundColor3 = Theme["Color Theme"],
-						ZIndex = 6
-					})
-					Create("UICorner", dot, { CornerRadius = UDim.new(1, 0) })
-
-					local nameTag = InsertTheme(Create("TextLabel", dot, {
-						Size = UDim2.new(0, 50, 0, 8),
-						Position = UDim2.new(0.5, 0, 0, -10),
-						AnchorPoint = Vector2.new(0.5, 1),
-						BackgroundTransparency = 1,
-						Text = player.Name,
-						Font = Enum.Font.Gotham,
-						TextSize = 7,
-						TextColor3 = Theme["Color Text"],
-						ZIndex = 7
-					}), "Text")
-
-					PlayerDots[player] = dot
-					return dot
-				end
-
-				Players.PlayerRemoving:Connect(function(p)
-					if PlayerDots[p] then
-						PlayerDots[p]:Destroy()
-						PlayerDots[p] = nil
-					end
-				end)
-
-				-- Atualiza câmera e pontos a cada frame
-				local MapConnection = RunService.Heartbeat:Connect(function()
-					local lp = Players.LocalPlayer
-					if not lp or not lp.Character then return end
-					local root = lp.Character:FindFirstChild("HumanoidRootPart")
-					if not root then return end
-
-					local pos = root.Position
-					VPCam.CFrame = CFrame.new(
-						Vector3.new(pos.X, pos.Y + (1 / MapZoom), pos.Z),
-						Vector3.new(pos.X, pos.Y, pos.Z)
-					)
-					VPCam.FieldOfView = 1 / MapZoom * 10
-
-					-- Ponto local sempre no centro
-					LocalDot.Position = UDim2.fromScale(0.5, 0.5)
-
-					if ShowOthers then
-						local vpSize = VP.AbsoluteSize
-						for _, p in ipairs(Players:GetPlayers()) do
-							if p ~= lp and p.Character then
-								local r2 = p.Character:FindFirstChild("HumanoidRootPart")
-								if r2 then
-									local delta = r2.Position - pos
-									local nx = 0.5 + (delta.X * MapZoom)
-									local ny = 0.5 + (delta.Z * MapZoom)
-									local dot = GetOrCreateDot(p)
-									dot.Position = UDim2.fromScale(
-										math.clamp(nx, 0.02, 0.98),
-										math.clamp(ny, 0.02, 0.98)
-									)
-									dot.Visible = math.abs(nx) <= 1 and math.abs(ny) <= 1
-								end
-							end
-						end
-					end
-				end)
-
-				-- Compass (N/S/L/O nos cantos)
-				local compassLabels = {
-					{t="N", ax=0.5, ay=0,   px=0.5, py=0.02},
-					{t="S", ax=0.5, ay=1,   px=0.5, py=0.98},
-					{t="W", ax=0,   ay=0.5, px=0.02,py=0.5},
-					{t="E", ax=1,   ay=0.5, px=0.98,py=0.5},
-				}
-				for _, c in ipairs(compassLabels) do
-					InsertTheme(Create("TextLabel", DotsLayer, {
-						Size = UDim2.fromOffset(10, 10),
-						AnchorPoint = Vector2.new(c.ax, c.ay),
-						Position = UDim2.fromScale(c.px, c.py),
-						BackgroundTransparency = 1,
-						Text = c.t,
-						Font = Enum.Font.GothamBold,
-						TextSize = 7,
-						TextColor3 = Theme["Color Dark Text"],
-						ZIndex = 7
-					}), "DarkText")
-				end
-
-				local MiniMap = {}
-				function MiniMap:Visible(...) Funcs:ToggleVisible(Holder, ...) end
-				function MiniMap:Destroy()
-					MapConnection:Disconnect()
-					Holder:Destroy()
-				end
-				function MiniMap:SetZoom(z)
-					MapZoom = z
-				end
-				function MiniMap:TogglePlayers(bool)
-					ShowOthers = bool
-					for _, dot in pairs(PlayerDots) do
-						dot.Visible = bool
-					end
-				end
-				return MiniMap
-			end
-
-			-- ══════════════════════════════
-			--  Tab:AddFeedback
-			-- ══════════════════════════════
-			function Tab:AddFeedback(Configs)
-				Configs = Configs or {}
-				local FTitle       = Configs[1] or Configs.Title or Configs.Name or "Feedback"
-				local FPlaceholder = Configs.Placeholder or "Escreva sua sugestão ou crítica..."
-				local FMaxStars    = Configs.Stars or 5
-				local Callback     = Funcs:GetCallback(Configs, 2)
-
-				local Holder = InsertTheme(Create("Frame", Tab.Cont, {
-					Size = UDim2.new(1, 0, 0, 105),
-					BackgroundColor3 = Theme["Color Hub 2"],
-					Name = "Option"
-				}), "Frame")
-				Make("Corner", Holder)
-				Make("Stroke", Holder)
-
-				-- Título
-				InsertTheme(Create("TextLabel", Holder, {
-					Size = UDim2.new(1, -15, 0, 14),
-					Position = UDim2.new(0, 10, 0, 7),
-					BackgroundTransparency = 1,
-					Text = FTitle,
-					Font = Enum.Font.FredokaOne,
-					TextSize = 11,
-					TextXAlignment = "Left",
-					TextColor3 = Theme["Color Text"]
-				}), "Text")
-
-				-- Estrelas
-				local StarRow = Create("Frame", Holder, {
-					Size = UDim2.new(0, FMaxStars * 18, 0, 16),
-					Position = UDim2.new(0, 10, 0, 26),
-					BackgroundTransparency = 1
-				})
-
-				local currentRating = 0
-				local StarButtons = {}
-
-				local function UpdateStars(n)
-					currentRating = n
-					for i, sb in ipairs(StarButtons) do
-						sb.ImageColor3 = i <= n
-							and Color3.fromRGB(255, 200, 50)
-							or Theme["Color Stroke"]
-					end
-				end
-
-				for i = 1, FMaxStars do
-					local sb = InsertTheme(Create("ImageButton", StarRow, {
-						Size = UDim2.fromOffset(14, 14),
-						Position = UDim2.fromOffset((i-1)*17, 1),
-						BackgroundTransparency = 1,
-						Image = "rbxassetid://10723376114", -- flame / star placeholder
-						ImageColor3 = Theme["Color Stroke"],
-						AutoButtonColor = false
-					}), "Stroke")
-					table.insert(StarButtons, sb)
-					sb.Activated:Connect(function() UpdateStars(i) end)
-				end
-
-				-- Caixa de texto
-				local BoxFrame = InsertTheme(Create("Frame", Holder, {
-					Size = UDim2.new(1, -18, 0, 30),
-					Position = UDim2.new(0, 9, 0, 48),
-					BackgroundColor3 = Theme["Color Stroke"]
-				}), "Stroke")
-				Make("Corner", BoxFrame, UDim.new(0, 5))
-
-				local InputBox = InsertTheme(Create("TextBox", BoxFrame, {
-					Size = UDim2.new(1, -12, 1, 0),
-					Position = UDim2.new(0, 6, 0, 0),
-					BackgroundTransparency = 1,
-					Font = Enum.Font.Gotham,
-					TextSize = 9,
-					TextXAlignment = "Left",
-					TextWrapped = true,
-					ClearTextOnFocus = false,
-					PlaceholderText = FPlaceholder,
-					Text = "",
-					TextColor3 = Theme["Color Text"]
-				}), "Text")
-
-				-- Botão enviar
-				local SendBtn = InsertTheme(Create("TextButton", Holder, {
-					Size = UDim2.new(1, -18, 0, 16),
-					Position = UDim2.new(0, 9, 0, 84),
-					BackgroundColor3 = Theme["Color Theme"],
-					Font = Enum.Font.GothamBold,
-					TextSize = 9,
-					Text = "Enviar Feedback",
-					TextColor3 = Theme["Color Text"],
-					AutoButtonColor = false
-				}), "Theme")
-				Make("Corner", SendBtn, UDim.new(0, 5))
-
-				SendBtn.MouseEnter:Connect(function()
-					CreateTween({SendBtn, "BackgroundTransparency", 0.3, 0.15})
-				end)
-				SendBtn.MouseLeave:Connect(function()
-					CreateTween({SendBtn, "BackgroundTransparency", 0, 0.15})
-				end)
-
-				local Sent = false
-				SendBtn.Activated:Connect(function()
-					if Sent then return end
-					local comment = InputBox.Text
-					if currentRating == 0 then
-						SendBtn.Text = "Selecione uma nota!"
-						task.wait(2)
-						SendBtn.Text = "Enviar Feedback"
-						return
-					end
-					Sent = true
-					SendBtn.Text = "Obrigado! ✓"
-					SendBtn.BackgroundColor3 = Color3.fromRGB(67, 181, 129)
-					Funcs:FireCallback(Callback, currentRating, comment)
-					task.wait(3)
-					if SendBtn and SendBtn.Parent then
-						Sent = false
-						SendBtn.Text = "Enviar Feedback"
-						SendBtn.BackgroundColor3 = Theme["Color Theme"]
-					end
-				end)
-
-				local Feedback = {}
-				function Feedback:Visible(...) Funcs:ToggleVisible(Holder, ...) end
-				function Feedback:Destroy() Holder:Destroy() end
-				function Feedback:Reset()
-					UpdateStars(0)
-					InputBox.Text = ""
-					Sent = false
-					SendBtn.Text = "Enviar Feedback"
-				end
-				function Feedback:GetRating() return currentRating end
-				return Feedback
-			end
-
-			-- ══════════════════════════════
-			--  Tab:AddChangelog
-			-- ══════════════════════════════
-			function Tab:AddChangelog(Configs)
-				Configs = Configs or {}
-				local CLTitle   = Configs.Title or Configs.Name or Configs[1] and type(Configs[1]) == "string" and Configs[1] or "Changelog"
-				local Versions  = (type(Configs[1]) == "table") and Configs or Configs.Versions or {}
-
-				-- Badge colors por tipo
-				local BadgeColors = {
-					new     = Color3.fromRGB(88, 181, 120),
-					fix     = Color3.fromRGB(88, 150, 242),
-					removed = Color3.fromRGB(220, 80, 80),
-					change  = Color3.fromRGB(220, 170, 50)
-				}
-
-				local Holder = Create("Frame", Tab.Cont, {
-					Size = UDim2.new(1, 0, 0, 0),
-					AutomaticSize = "Y",
-					BackgroundTransparency = 1,
-					Name = "Option"
-				})
-
-				-- Header clicável para colapsar/expandir tudo
-				local HeaderBtn = InsertTheme(Create("TextButton", Holder, {
-					Size = UDim2.new(1, 0, 0, 24),
-					BackgroundColor3 = Theme["Color Hub 2"],
-					Font = Enum.Font.FredokaOne,
-					Text = "  📋  " .. CLTitle,
-					TextSize = 11,
-					TextXAlignment = "Left",
-					TextColor3 = Theme["Color Text"],
-					AutoButtonColor = false
-				}), "Frame")
-				Make("Corner", HeaderBtn)
-				Make("Stroke", HeaderBtn)
-
-				local ArrowLabel = InsertTheme(Create("TextLabel", HeaderBtn, {
-					Size = UDim2.fromOffset(14, 14),
-					Position = UDim2.new(1, -18, 0.5, 0),
-					AnchorPoint = Vector2.new(1, 0.5),
-					BackgroundTransparency = 1,
-					Text = "▾",
-					Font = Enum.Font.GothamBold,
-					TextSize = 12,
-					TextColor3 = Theme["Color Dark Text"]
-				}), "DarkText")
-
-				-- Container das versões
-				local VersionsContainer = Create("Frame", Holder, {
-					Size = UDim2.new(1, 0, 0, 0),
-					AutomaticSize = "Y",
-					Position = UDim2.new(0, 0, 0, 28),
-					BackgroundTransparency = 1,
-					ClipsDescendants = false
-				}, {
-					Create("UIListLayout", { Padding = UDim.new(0, 4) })
-				})
-
-				local Expanded = true
-				HeaderBtn.Activated:Connect(function()
-					Expanded = not Expanded
-					VersionsContainer.Visible = Expanded
-					ArrowLabel.Text = Expanded and "▾" or "▸"
-				end)
-
-				-- Renderiza cada versão
-				for _, verData in ipairs(Versions) do
-					local vNum     = verData.Version or "?"
-					local vDate    = verData.Date or ""
-					local vChanges = verData.Changes or {}
-
-					local VBlock = InsertTheme(Create("Frame", VersionsContainer, {
-						Size = UDim2.new(1, 0, 0, 0),
-						AutomaticSize = "Y",
-						BackgroundColor3 = Theme["Color Hub 2"]
-					}), "Frame")
-					Make("Corner", VBlock)
-					Make("Stroke", VBlock)
-
-					-- Header da versão (clicável para colapsar)
-					local VHeader = Create("TextButton", VBlock, {
-						Size = UDim2.new(1, 0, 0, 22),
-						BackgroundTransparency = 1,
-						Text = "",
-						AutoButtonColor = false
-					})
-
-					InsertTheme(Create("TextLabel", VHeader, {
-						Size = UDim2.new(0.6, 0, 1, 0),
-						Position = UDim2.new(0, 10, 0, 0),
-						BackgroundTransparency = 1,
-						Text = "v" .. vNum,
-						Font = Enum.Font.GothamBold,
-						TextSize = 10,
-						TextXAlignment = "Left",
-						TextColor3 = Theme["Color Text"]
-					}), "Text")
-
-					InsertTheme(Create("TextLabel", VHeader, {
-						Size = UDim2.new(0.4, -10, 1, 0),
-						Position = UDim2.new(0.6, 0, 0, 0),
-						BackgroundTransparency = 1,
-						Text = vDate,
-						Font = Enum.Font.Gotham,
-						TextSize = 8,
-						TextXAlignment = "Right",
-						TextColor3 = Theme["Color Dark Text"]
-					}), "DarkText")
-
-					-- Lista de mudanças
-					local ChangesList = Create("Frame", VBlock, {
-						Size = UDim2.new(1, -16, 0, 0),
-						AutomaticSize = "Y",
-						Position = UDim2.new(0, 8, 0, 24),
-						BackgroundTransparency = 1,
-						ClipsDescendants = false
-					}, {
-						Create("UIListLayout", { Padding = UDim.new(0, 3) }),
-						Create("UIPadding", { PaddingBottom = UDim.new(0, 6) })
-					})
-
-					local VExpanded = true
-					VHeader.Activated:Connect(function()
-						VExpanded = not VExpanded
-						ChangesList.Visible = VExpanded
-					end)
-
-					for _, change in ipairs(vChanges) do
-						local cType = change[1] or "new"
-						local cText = change[2] or ""
-						local bColor = BadgeColors[cType] or BadgeColors.new
-
-						local Row = Create("Frame", ChangesList, {
-							Size = UDim2.new(1, 0, 0, 0),
-							AutomaticSize = "Y",
-							BackgroundTransparency = 1
-						})
-
-						-- Badge de tipo
-						local Badge = Create("TextLabel", Row, {
-							Size = UDim2.fromOffset(42, 12),
-							Position = UDim2.new(0, 0, 0, 1),
-							BackgroundColor3 = bColor,
-							Text = cType:upper(),
-							Font = Enum.Font.GothamBold,
-							TextSize = 7,
-							TextColor3 = Color3.fromRGB(255, 255, 255),
-							BackgroundTransparency = 0.2
-						})
-						Make("Corner", Badge, UDim.new(0, 3))
-
-						InsertTheme(Create("TextLabel", Row, {
-							Size = UDim2.new(1, -50, 0, 0),
-							AutomaticSize = "Y",
-							Position = UDim2.new(0, 48, 0, 0),
-							BackgroundTransparency = 1,
-							Text = cText,
-							Font = Enum.Font.Gotham,
-							TextSize = 9,
-							TextXAlignment = "Left",
-							TextWrapped = true,
-							TextColor3 = Theme["Color Dark Text"]
-						}), "DarkText")
-					end
-				end
-
-				local Changelog = {}
-				function Changelog:Visible(...) Funcs:ToggleVisible(Holder, ...) end
-				function Changelog:Destroy() Holder:Destroy() end
-				return Changelog
-			end
-
-			-- ══════════════════════════════
-			--  Tab:AddReportBug
-			-- ══════════════════════════════
-			function Tab:AddReportBug(Configs)
-				Configs = Configs or {}
-				local RBTitle      = Configs[1] or Configs.Title or Configs.Name or "Reportar Bug"
-				local RBWebhook    = Configs.Webhook or Configs[2] or ""
-				local RBCategories = Configs.Categories or {"Crash", "Visual", "Gameplay", "Outro"}
-				local RBSysInfo    = Configs.IncludeSystemInfo ~= false
-				local Callback     = Configs.Callback or function() end
-
-				-- Altura total do card
-				local Holder = InsertTheme(Create("Frame", Tab.Cont, {
-					Size = UDim2.new(1, 0, 0, 148),
-					BackgroundColor3 = Theme["Color Hub 2"],
-					Name = "Option",
-					ClipsDescendants = false
-				}), "Frame")
-				Make("Corner", Holder)
-				Make("Stroke", Holder)
-
-				-- Título
-				InsertTheme(Create("TextLabel", Holder, {
-					Size = UDim2.new(1, -15, 0, 14),
-					Position = UDim2.new(0, 10, 0, 7),
-					BackgroundTransparency = 1,
-					Text = "🐛  " .. RBTitle,
-					Font = Enum.Font.FredokaOne,
-					TextSize = 11,
-					TextXAlignment = "Left",
-					TextColor3 = Theme["Color Text"]
-				}), "Text")
-
-				-- Campo de descrição
-				local DescFrame = InsertTheme(Create("Frame", Holder, {
-					Size = UDim2.new(1, -18, 0, 38),
-					Position = UDim2.new(0, 9, 0, 26),
-					BackgroundColor3 = Theme["Color Stroke"]
-				}), "Stroke")
-				Make("Corner", DescFrame, UDim.new(0, 5))
-
-				local DescBox = InsertTheme(Create("TextBox", DescFrame, {
-					Size = UDim2.new(1, -10, 1, 0),
-					Position = UDim2.new(0, 5, 0, 0),
-					BackgroundTransparency = 1,
-					Font = Enum.Font.Gotham,
-					TextSize = 9,
-					TextXAlignment = "Left",
-					TextYAlignment = "Top",
-					TextWrapped = true,
-					ClearTextOnFocus = false,
-					PlaceholderText = "Descreva o bug com o máximo de detalhes...",
-					Text = "",
-					TextColor3 = Theme["Color Text"]
-				}), "Text")
-
-				-- Dropdown de categoria (mini — botões inline)
-				local CatLabel = InsertTheme(Create("TextLabel", Holder, {
-					Size = UDim2.new(0, 60, 0, 12),
-					Position = UDim2.new(0, 9, 0, 70),
-					BackgroundTransparency = 1,
-					Text = "Categoria:",
-					Font = Enum.Font.GothamBold,
-					TextSize = 8,
-					TextXAlignment = "Left",
-					TextColor3 = Theme["Color Dark Text"]
-				}), "DarkText")
-
-				local CatRow = Create("Frame", Holder, {
-					Size = UDim2.new(1, -18, 0, 16),
-					Position = UDim2.new(0, 9, 0, 84),
-					BackgroundTransparency = 1
-				}, {
-					Create("UIListLayout", {
-						FillDirection = "Horizontal",
-						Padding = UDim.new(0, 4),
-						VerticalAlignment = "Center"
-					})
-				})
-
-				local selectedCategory = RBCategories[1]
-				local CatBtns = {}
-
-				local function SelectCategory(name)
-					selectedCategory = name
-					for _, cb in ipairs(CatBtns) do
-						local isActive = cb.Text == name
-						CreateTween({cb, "BackgroundTransparency", isActive and 0 or 0.6, 0.15})
-					end
-				end
-
-				for _, cat in ipairs(RBCategories) do
-					local cb = InsertTheme(Create("TextButton", CatRow, {
-						Size = UDim2.new(0, 0, 1, 0),
-						AutomaticSize = "X",
-						BackgroundColor3 = Theme["Color Theme"],
-						BackgroundTransparency = 0.6,
-						Font = Enum.Font.GothamBold,
-						TextSize = 8,
-						Text = cat,
-						TextColor3 = Theme["Color Text"],
-						AutoButtonColor = false
-					}), "Theme")
-					Make("Corner", cb, UDim.new(0, 4))
-					Create("UIPadding", cb, {
-						PaddingLeft = UDim.new(0, 5),
-						PaddingRight = UDim.new(0, 5)
-					})
-					table.insert(CatBtns, cb)
-					cb.Activated:Connect(function() SelectCategory(cat) end)
-				end
-				SelectCategory(selectedCategory)
-
-				-- Checkbox "acontece sempre?"
-				local AlwaysRow = Create("Frame", Holder, {
-					Size = UDim2.new(1, -18, 0, 12),
-					Position = UDim2.new(0, 9, 0, 106),
-					BackgroundTransparency = 1
-				})
-
-				local AlwaysCheck = InsertTheme(Create("Frame", AlwaysRow, {
-					Size = UDim2.fromOffset(10, 10),
-					Position = UDim2.new(0, 0, 0.5, 0),
-					AnchorPoint = Vector2.new(0, 0.5),
-					BackgroundColor3 = Theme["Color Stroke"]
-				}), "Stroke")
-				Make("Corner", AlwaysCheck, UDim.new(0, 3))
-				Make("Stroke", AlwaysCheck)
-
-				local AlwaysTick = InsertTheme(Create("Frame", AlwaysCheck, {
-					Size = UDim2.fromOffset(6, 6),
-					Position = UDim2.new(0.5, 0, 0.5, 0),
-					AnchorPoint = Vector2.new(0.5, 0.5),
-					BackgroundColor3 = Theme["Color Theme"],
-					BackgroundTransparency = 1
-				}), "Theme")
-				Make("Corner", AlwaysTick, UDim.new(0.5, 0))
-
-				InsertTheme(Create("TextLabel", AlwaysRow, {
-					Size = UDim2.new(1, -16, 1, 0),
-					Position = UDim2.new(0, 15, 0, 0),
-					BackgroundTransparency = 1,
-					Text = "Este bug acontece sempre?",
-					Font = Enum.Font.Gotham,
-					TextSize = 8,
-					TextXAlignment = "Left",
-					TextColor3 = Theme["Color Dark Text"]
-				}), "DarkText")
-
-				local alwaysHappens = false
-				local AlwaysBtn = Create("TextButton", AlwaysRow, {
-					Size = UDim2.new(1, 0, 1, 0),
-					BackgroundTransparency = 1,
-					Text = ""
-				})
-				AlwaysBtn.Activated:Connect(function()
-					alwaysHappens = not alwaysHappens
-					CreateTween({AlwaysTick, "BackgroundTransparency", alwaysHappens and 0 or 1, 0.15})
-				end)
-
-				-- Botão enviar
-				local SendBtn = InsertTheme(Create("TextButton", Holder, {
-					Size = UDim2.new(1, -18, 0, 16),
-					Position = UDim2.new(0, 9, 0, 126),
-					BackgroundColor3 = Theme["Color Theme"],
-					Font = Enum.Font.GothamBold,
-					TextSize = 9,
-					Text = "Enviar Report",
-					TextColor3 = Theme["Color Text"],
-					AutoButtonColor = false
-				}), "Theme")
-				Make("Corner", SendBtn, UDim.new(0, 5))
-
-				SendBtn.MouseEnter:Connect(function()
-					CreateTween({SendBtn, "BackgroundTransparency", 0.3, 0.15})
-				end)
-				SendBtn.MouseLeave:Connect(function()
-					CreateTween({SendBtn, "BackgroundTransparency", 0, 0.15})
-				end)
-
-				SendBtn.Activated:Connect(function()
-					local desc = DescBox.Text
-					if desc:gsub(" ", ""):len() < 5 then
-						SendBtn.Text = "Descreva melhor o bug!"
-						task.wait(2)
-						SendBtn.Text = "Enviar Report"
-						return
-					end
-
-					local sysInfo = {}
-					if RBSysInfo then
-						local lp = Players.LocalPlayer
-						sysInfo = {
-							ScriptVersion = redzlib.Info.Version,
-							JobId = game.JobId,
-							PlaceId = game.PlaceId,
-							Ping = lp and math.floor(lp.NetworkPing * 1000) .. "ms" or "N/A",
-							Players = #Players:GetPlayers()
-						}
-					end
-
-					local payload = {
-						category    = selectedCategory,
-						description = desc,
-						alwaysHappens = alwaysHappens,
-						systemInfo  = sysInfo
-					}
-
-					SendBtn.Text = "Enviando..."
-
-					-- Tenta webhook se fornecido
-					if RBWebhook ~= "" and HttpService then
-						local ok = pcall(function()
-							local body = HttpService:JSONEncode({
-								content = nil,
-								embeds = {{
-									title = "🐛 Bug Report — " .. selectedCategory,
-									description = desc,
-									color = 15158332,
-									fields = {
-										{ name = "Acontece sempre?", value = tostring(alwaysHappens), inline = true },
-										{ name = "Versão",           value = redzlib.Info.Version,   inline = true },
-										{ name = "JobId",            value = game.JobId,              inline = false },
-									}
-								}}
-							})
-							HttpService:PostAsync(RBWebhook, body, Enum.HttpContentType.ApplicationJson)
-						end)
-					end
-
-					task.spawn(Callback, payload)
-
-					SendBtn.Text = "Report Enviado ✓"
-					SendBtn.BackgroundColor3 = Color3.fromRGB(67, 181, 129)
-					task.wait(3)
-					if SendBtn and SendBtn.Parent then
-						SendBtn.Text = "Enviar Report"
-						SendBtn.BackgroundColor3 = Theme["Color Theme"]
-						DescBox.Text = ""
-						alwaysHappens = false
-						CreateTween({AlwaysTick, "BackgroundTransparency", 1, 0.15})
-						SelectCategory(RBCategories[1])
-					end
-				end)
-
-				local ReportBug = {}
-				function ReportBug:Visible(...) Funcs:ToggleVisible(Holder, ...) end
-				function ReportBug:Destroy() Holder:Destroy() end
-				return ReportBug
-			end
-
-			return Tab
-		end
-		return Window
-	end
 end
 
 return redzlib
